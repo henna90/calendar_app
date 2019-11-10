@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+<head>
+  <!-- <title>Homepage</title>
+
+  
+  <h1> Welcome to my Calendar </h1> -->
+</head>
+
+<body>
+    {% for message in get_flashed_messages() %}
+    {{ message }}
+
+  {% endfor %}
+
+        {% block content %} {% endblock %}
+</body>    
+</html>

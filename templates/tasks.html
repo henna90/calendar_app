@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h1>Task List</h1>
+<form action="/addtask" method="POST">
+    Task: <input type="text" name="task">
+    
+    Description: <input type="text" name="description">
+  
+    <button type="submit">add task</button>
+
+</form>
+
+<ul>
+    {%if tasks%}
+        {% for task in tasks %}
+        <li>Task: 
+            {{task.task_name}}
+            <br>
+            Description:
+            {{ task.task_description }} 
+            <a href="/deletetask/{{task.task_id}}"> delete</a>
+        </a>
+        </li>
+        {% endfor %}
+    {%else%}  
+
+        There are not tasks for you to do. </br>
+        
+
+    {%endif%}
+    <!-- {% for task in tasks %}
+      <li>
+       
+          {{ task.task_description }} 
+        </a>
+      </li>
+    {% endfor %} -->
+
+  </ul>
+
+
+{% endblock %}
