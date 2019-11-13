@@ -4,12 +4,16 @@ from flask import (Flask, render_template, redirect, request, flash,
                    session, make_response, flash)
 from flask_debugtoolbar import DebugToolbarExtension
 
-from model import (User, Event, Guest, Task, Project, connect_to_db, db, RevokedTokenModel)
+from model import (User, Event, Guest, Task, Project, connect_to_db, db,ProjectMember, RevokedTokenModel)
 
 import jsonify
 
-from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt, set_access_cookies, set_refresh_cookies, unset_jwt_cookies)
+from flask_jwt_extended import (create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt, set_access_cookies, set_refresh_cookies, unset_jwt_cookies, get_current_user, fresh_jwt_required,
+verify_jwt_in_request)
 from datetime import datetime
+
+
+# from sqlalchemy.orm import sessionmaker
 
 app = Flask(__name__)
 app.config['JWT_TOKEN_LOCATION'] = ['cookies']
@@ -57,14 +61,17 @@ def sign_up():
         new_user = User(email=email, password=User.generate_hash(password))
         db.session.add(new_user)
         db.session.commit()
-        return render_template("registration-submitted.html", status="added",
-            email=email)
+        # return render_template("registration-submitted.html", status="added",
+        #     email=email)
+        flash("Your account was succesfully created. Please signin to continue")
+        return redirect("/login")
        
 
     else:
-        return render_template("registration-submitted.html", status="preexisting", 
-            email=email)
-
+        # return render_template("registration-submitted.html", status="preexisting", 
+        #     email=email)
+        flash("looks like you already have an account. Please sign in to continue")
+        return redirect("/login")
 
 @app.route('/login')
 def login():
@@ -81,7 +88,9 @@ def signin():
     current_user = User.find_by_email(email)
 
     if not current_user:
-        return jsonify({'message': 'User {} doesn\'t exist'.format(email)})
+        # return jsonify({'message': 'User {} doesn\'t exist'.format(email)})
+        flash('User {} doesn\'t exist'.format(email))
+        return redirect('/registration_form')
 
     if User.verify_hash(password, current_user.password):
             
@@ -106,7 +115,7 @@ def signin():
         return redirect('/login')
 
 
-@app.route('/logout', methods=["POST"])
+@app.route('/logout')
 @jwt_required
 def logout():
 
@@ -116,7 +125,7 @@ def logout():
     try:
         revoked_token = RevokedTokenModel(jti = jti)
         revoked_token.add()
-        resp = {'message': 'Refresh token has been revoked'}
+        resp = redirect("/")
         unset_jwt_cookies(resp)
         return resp
     except:
@@ -132,6 +141,12 @@ def logout():
 @app.route('/test')
 @jwt_required
 def test():
+    cookies = request.cookies
+
+    print(cookies,"===========")
+    print(verify_jwt_in_request())
+    print("get jwt indentity", get_jwt_identity())
+    print("get current user", get_current_user())
     #get current user
     current_user= get_jwt_identity()
     people = db.session.query(User.email, Task.task_name, Task.task_description).join(Task).all()
@@ -222,6 +237,15 @@ def project_add():
     project_name = request.form['project_name']
     project_description = request.form['project_description']
     new_project = Project(project_name = project_name, description = project_description, admin_id=user_id)
+    # db.session.add(new_project)
+    # db.session.commit()
+
+    current_user.projects.append(new_project)
+
+
+    # Session = sessionmaker(bind = engine)
+    # session = Session()
+    # session.add(e1)
     db.session.add(new_project)
     db.session.commit()
 
@@ -249,17 +273,68 @@ def projects():
     user_id = current_user.user_id
     projects_numbers = ProjectMember.query.filter_by(user_id = user_id).all()
 
+    print("=++++++++=====", projects_numbers)
+
+    if not projects_numbers:
+        return "User has no projects"
+
     #projects_numbers = list of project numbers 
     projects=[]
-    for project_id in projects_numbers:
-       projects.append(Project.query.filter_by(project_id = project_id))
-    print(projects)  
+    users=[]
+    
+    for project in projects_numbers:
+        print(project.project_id)  
+        projects.append(project.project_id)
+        users.append(project.user_id)
+      
 
-    # projects = Project.query.filter_by(project_id = project_id)
+
+  
+    print("+++++++", projects)
+  
+
+    result = Project.query.filter(Project.project_id.in_(projects))
+    members = User.query.filter(User.user_id.in_(users))
+
+    return render_template("projects.html", projects = result, members = members)
 
 
+@app.route('/addmember/<project_id>')
+@jwt_required
+def add_member(project_id):
+    print(project_id)
+    
+    project = Project.query.filter_by(project_id = project_id).one()
 
-    return "projects"  
+    members = ProjectMember.query.filter(project_id = project_id).all()
+
+    
+    
+
+    return render_template("add_member.html", project = project, members = members)
+
+
+@app.route('/add_member_to_<project_id>', methods=["POST"])
+@jwt_required
+def add_membe_to_project(project_id):
+    member_to_add = request.form['member_email']
+    print(project_id, "=======")
+
+    # check to see if member is registered in db
+
+    is_user = User.query.filter_by(email = member_to_add).first()
+
+    if not is_user:
+        return "there is no user with the following email address"
+
+    new_member = ProjectMember(project_id = project_id, user_id = is_user.user_id)
+    db.session.add(new_member)
+    db.session.commit()
+
+    return "New member has been added"
+
+ 
+
 
 if __name__ == "__main__":
     # We have to set debug=True here, since it has to be True at the

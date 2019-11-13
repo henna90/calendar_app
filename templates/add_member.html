@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<p>Add Memeber to {{project.project_name}} project</p>
+
+
+<form action="/add_member_to_{{project.project_id}}" method="POST">
+    email: <input type="text" name="member_email">
+    <br>
+    Note: <input type="text" name="note">
+    <br>
+    <input type="submit">
+
+</form>
+
+{% endblock %}

@@ -12,6 +12,19 @@
     {{ message }}
 
   {% endfor %}
+  {% if request.cookies.get('access_token_cookie') %}
+
+     <br>
+      <form action="/logout" method="GET">
+          <input type="submit" name="Logout" value="Logout">
+      </form>
+
+  {% else %}
+
+      <a href="/login">Login</a>
+      
+
+  {% endif %}
 
         {% block content %} {% endblock %}
 </body>    

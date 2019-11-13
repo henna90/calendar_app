@@ -25,10 +25,7 @@ api = Api(app)
 ##############################################################################
 # Model definitions
 
-association_table = db.Table('association', Base.metadata,
-    db.Column('user_id', db.Integer, ForeignKey('user.id')),
-    db.Column('project_id', db.Integer, ForeignKey('project.id'))
-) 
+
 
 class User(db.Model):
     """User of calendar website."""
@@ -39,10 +36,12 @@ class User(db.Model):
     email = db.Column(db.String(64), nullable=True)
     password = db.Column(db.String(120), nullable=True)
 
+    projects = db.relationship('Project', secondary = 'projects_members')
+
     # projects = db.relationship("ProjectMember", back_populates="users")
-    projects = db.relationship("project", 
-                                secondary=association_table,
-                                back_populates="users")
+    # projects = db.relationship("project", 
+    #                             secondary=association_table,
+    #                             back_populates="users")
 
                            
 
@@ -65,6 +64,44 @@ class User(db.Model):
 
     def __repr__(self):
         return(f"<User user_id={self.user_id} email={self.email}>")
+
+class Project(db.Model):
+
+    __tablename__ = "projects"
+
+    project_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    project_name = db.Column(db.String, nullable=False)
+    admin_id = db.Column(db.String, nullable=True)
+    description = db.Column(db.String, nullable=True)
+    created_on = db.Column(db.DateTime, nullable=True)
+    complete_by = db.Column(db.DateTime, nullable=True)
+
+    users = db.relationship('User', secondary = 'projects_members')
+
+    # users = db.relationship("User", back_populates="Project")
+
+    # users = db.relationship("user",
+    #                         secondary=association_table,
+    #                         back_populates="projects") 
+    
+
+    def __repr__(self):
+        return(f"<project project_id={self.project_id} project_name={self.project_name}>")                         
+
+
+class ProjectMember(db.Model):
+    __tablename__="projects_members"
+
+
+    project_id = db.Column(
+    db.Integer, 
+    ForeignKey('projects.project_id'), 
+    primary_key = True)
+    user_id = db.Column(
+    db.Integer, 
+    ForeignKey('users.user_id'), 
+    primary_key = True)  
+  
 
         
 
@@ -147,27 +184,32 @@ class Task(db.Model):
         return(f""" <Task task_id={self.task_id} user_id{self.user_id} created_on={self.created_on} complete_by={self.complete_by}""")   
 
 
-class Project(db.Model):
+# class Project(db.Model):
 
-    __tablename__ = "projects"
+#     __tablename__ = "projects"
 
-    project_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    project_name = db.Column(db.String, nullable=False)
-    admin_id = db.Column(db.String, nullable=True)
-    description = db.Column(db.String, nullable=True)
-    created_on = db.Column(db.DateTime, nullable=True)
-    complete_by = db.Column(db.DateTime, nullable=True)
+#     project_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+#     project_name = db.Column(db.String, nullable=False)
+#     admin_id = db.Column(db.String, nullable=True)
+#     description = db.Column(db.String, nullable=True)
+#     created_on = db.Column(db.DateTime, nullable=True)
+#     complete_by = db.Column(db.DateTime, nullable=True)
 
-    # users = db.relationship("User", back_populates="Project")
+#     # users = db.relationship("User", back_populates="Project")
 
-    users = db.relationship("user",
-                            secondary=association_table,
-                            back_populates="projects") 
+#     users = db.relationship("user",
+#                             secondary=association_table,
+#                             back_populates="projects") 
     
 
-    def __repr__(self):
-        return(f"<project project_id={self.project_id} project_name={self.project_name}>")                         
+#     def __repr__(self):
+#         return(f"<project project_id={self.project_id} project_name={self.project_name}>")                         
 
+
+# association_table = db.Table('association', Base.metadata,
+#     db.Column('user_id', db.Integer, ForeignKey('user.id')),
+#     db.Column('project_id', db.Integer, ForeignKey('project.id'))
+# ) 
 # class ProjectMember(db.Model):
 
 #     # association table

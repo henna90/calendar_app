@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h1>Project List</h1>
+
+
+<ul>
+    {%if projects%}
+        {% for project in projects %}
+        <li>Project
+            {{project.project_name}}
+            <br>
+            Description:
+            {{ project.description }} 
+
+        <a href="/addmember/{{project.project_id}}"> add memeber</a>    
+        
+        </li>
+        {% endfor %}
+    {%else%}  
+
+        There are not Projects for you to do. </br>
+        
+
+    {%endif%}
+    {% for member in members%}
+        {{member.email}}
+       
+    {% endfor %}    
+  
+
+  </ul>
+
+
+{% endblock %}
